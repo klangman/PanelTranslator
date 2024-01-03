@@ -1,0 +1,75 @@
+{
+    "languages-header": {
+        "type":        "header",
+        "description": "Default Languages"
+    },
+    "default-from-language": {
+        "type" :       "entry",
+        "default":     "English",
+        "description": "Source language"
+    },
+    "default-to-language": {
+        "type" :       "entry",
+        "default":     "French",
+        "description": "Target language"
+    },
+
+    "engine-header": {
+        "type":        "header",
+        "description": "Translation Engine"
+    },
+    "translate-engine" : {
+        "type" :       "combobox",
+        "default":     2,
+        "options":     {
+            "Apertium": 0,
+            "Aspell": 1,
+            "Auto": 2,
+            "Bing": 3,
+            "Google": 4,
+            "Hunspell": 5,
+            "Spell": 6,
+            "Yandex": 7
+        },
+        "description": "Engine"
+    },
+
+    "auto-header": {
+        "type":        "header",
+        "description": "Automatic Popup Actions"
+    },
+    "left-auto-paste" : {
+        "type" :       "combobox",
+        "default":     0,
+        "options":     {
+            "Disabled": 0,
+            "Selection": 1,
+            "Clipboard": 2
+        },
+        "description": "Paste on applet panel button left click",
+        "tooltip":     "Automatically paste the current selection or clipboard content and translate it when opening the popup window using a left click on the applet panel button"
+    },
+    "left-auto-play": {
+        "type": "switch",
+        "default": 0,
+        "description": "Play the translation on left click",
+        "dependency" : "left-auto-paste>0"
+    },
+    "middle-auto-paste" : {
+        "type" :       "combobox",
+        "default":     1,
+        "options":     {
+            "Disabled": 0,
+            "Selection": 1,
+            "Clipboard": 2
+        },
+        "description": "Paste on applet panel button middle click",
+        "tooltip":     "Automatically paste the current selection or clipboard content and translate it when opening the popup window using a middle click on the applet panel button"
+    },
+    "middle-auto-play": {
+        "type": "switch",
+        "default": 0,
+        "description": "Play the translation on middle click",
+        "dependency" : "middle-auto-paste>0"
+    }
+}

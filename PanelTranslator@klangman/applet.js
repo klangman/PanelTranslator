@@ -59,7 +59,12 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.menuManager.addMenu(this.menu);
       this.translatorPopup = new TranslatorPopupItem(this);
       this.menu.addMenuItem(this.translatorPopup);
+      this.infomenuitem = new PopupMenu.PopupIconMenuItem("", "", St.IconType.SYMBOLIC);
+      this.infomenuitem.actor.set_reactive(false);
+      this.menu.addMenuItem(this.infomenuitem);
+      this.infomenuitem.actor.hide();
       this.settings = new Settings.AppletSettings(this, UUID, instanceId);
+      this.languages = [];
       this.getLanguages();
    }
 
@@ -67,26 +72,25 @@ class PanelTranslatorApp extends Applet.IconApplet {
    }
 
    _onButtonPressEvent(actor, event) {
-      super._onButtonPressEvent(actor, event);
-   }
-
-   _onButtonPressEvent(actor, event) {
       let button = event.get_button();
       if (button == 2 ) {/* Middle Click */
-         let autoPaste = this.settings.getValue("middle-auto-paste");
-         if (!this.menu.isOpen && autoPaste != AutoPasteType.Disabled ) {
-            this.translatorPopup.translateClipboard(autoPaste, this.settings.getValue("middle-auto-play"));
-         }
-         this.menu.toggle();
+         this.openPopupMenu(this.settings.getValue("middle-auto-paste"), this.settings.getValue("middle-auto-play"));
          return;
       }
       super._onButtonPressEvent(actor, event);
    }
 
    on_applet_clicked() {
-      let autoPaste = this.settings.getValue("left-auto-paste");
+      this.openPopupMenu(this.settings.getValue("left-auto-paste"), this.settings.getValue("left-auto-play"));
+   }
+
+   openPopupMenu(autoPaste, play) {
+      this.infomenuitem.actor.hide();
+      if (this.languages.length == 0) {
+         this.getLanguages();
+      }
       if (!this.menu.isOpen && autoPaste != AutoPasteType.Disabled ) {
-         this.translatorPopup.translateClipboard(autoPaste, this.settings.getValue("left-auto-play"));
+         this.translatorPopup.translateClipboard(autoPaste, play);
       }
       this.menu.toggle();
    }
@@ -111,13 +115,25 @@ class PanelTranslatorApp extends Applet.IconApplet {
                this.languages.push( {code: code, englishName: englishName, name: name} );
             }
          }
+         if (this.languages.length == 0) {
+            this.infomenuitem.label.set_text(_("Unable to query available languages from translate-shell"));
+            this.infomenuitem.setIconSymbolicName("emblem-important");
+            this.infomenuitem.actor.show();
+         }
+      } else if (exitCode===127){
+         this.infomenuitem.label.set_text(_("Required \"trans\" command not found, please install translate-shell"));
+         this.infomenuitem.setIconSymbolicName("emblem-important");
+         this.infomenuitem.actor.show();
+      } else {
+         this.infomenuitem.label.set_text(_("Error, the \"trans\" command returned an exit code of ") + this.exitCode );
+         this.infomenuitem.setIconSymbolicName("emblem-important");
+         this.infomenuitem.actor.show();
       }
       this.translatorPopup.setFromLanguage( this.getLanguage( this.settings.getValue("default-from-language") ) );
       this.translatorPopup.setToLanguage(   this.getLanguage( this.settings.getValue("default-to-language") ) );
    }
 
    getLanguage(name) {
-      log( `Looking for language: "${name}"` );
       if (name.length == 0)
          return null;
       for (let i=0 ; i<this.languages.length ; i++ ) {

@@ -73,7 +73,7 @@
     },
     "ctrl-middle-button-action" : {
         "type" : "combobox",
-        "default": 1,
+        "default": 5,
         "options": {
             "Do nothing": 0,
             "Show popup menu, paste Selection and translate": 1,

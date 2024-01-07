@@ -1,7 +1,7 @@
 {
   "uuid": "PanelTranslator@klangman",
-  "name": "Panel Translaor",
-  "description": "Translate text to other languages from the Cinnamon panel using Google, Bing or other on-line translators",
+  "name": "Panel Translator",
+  "description": "Translate text to other languages from the Cinnamon panel using Google, Bing and other translators",
   "max-instances": -1,
   "author": "klangman",
   "hide-configuration": false

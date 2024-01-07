@@ -1,27 +1,27 @@
 {
     "languages-header": {
-        "type":        "header",
+        "type": "header",
         "description": "Default Languages"
     },
     "default-from-language": {
-        "type" :       "entry",
-        "default":     "English",
+        "type" : "entry",
+        "default": "English",
         "description": "Source language"
     },
     "default-to-language": {
-        "type" :       "entry",
-        "default":     "French",
+        "type" : "entry",
+        "default": "French",
         "description": "Target language"
     },
 
     "engine-header": {
-        "type":        "header",
+        "type": "header",
         "description": "Translation Engine"
     },
     "translate-engine" : {
-        "type" :       "combobox",
-        "default":     2,
-        "options":     {
+        "type" : "combobox",
+        "default": 2,
+        "options": {
             "Apertium": 0,
             "Aspell": 1,
             "Auto": 2,
@@ -31,45 +31,59 @@
             "Spell": 6,
             "Yandex": 7
         },
-        "description": "Engine"
+        "description": "Engine",
+        "tooltip": "Most engines don't support play back and some don't even translate, others just report HTTP errors. So it's best to use \"auto\" and let translate-shell decide what translator to use."
     },
 
     "auto-header": {
-        "type":        "header",
-        "description": "Automatic Popup Actions"
+        "type": "header",
+        "description": "Panel Button Actions"
     },
     "left-auto-paste" : {
-        "type" :       "combobox",
-        "default":     0,
-        "options":     {
+        "type": "combobox",
+        "default": 0,
+        "options": {
             "Disabled": 0,
             "Selection": 1,
             "Clipboard": 2
         },
-        "description": "Paste on applet panel button left click",
-        "tooltip":     "Automatically paste the current selection or clipboard content and translate it when opening the popup window using a left click on the applet panel button"
+        "description": "Automatically paste and translate on left click",
+        "tooltip": "Automatically paste the current selection/clipboard content and translate it when opening the popup window using a left click on the translator panel button"
     },
     "left-auto-play": {
         "type": "switch",
         "default": 0,
-        "description": "Play the translation on left click",
+        "description": "Automatically play the translation on left click",
         "dependency" : "left-auto-paste>0"
     },
-    "middle-auto-paste" : {
-        "type" :       "combobox",
-        "default":     1,
-        "options":     {
-            "Disabled": 0,
-            "Selection": 1,
-            "Clipboard": 2
+    "middle-button-action" : {
+        "type" : "combobox",
+        "default": 1,
+        "options": {
+            "Do nothing": 0,
+            "Show popup menu, paste Selection and translate": 1,
+            "Show popup menu, paste Clipboard and translate": 2,
+            "Show popup menu, paste Selection, translate and play": 3,
+            "Show popup menu, paste Clipboard, translate and play": 4,
+            "Play translation of Selection": 5,
+            "Play translation of Clipboard": 6
         },
-        "description": "Paste on applet panel button middle click",
-        "tooltip":     "Automatically paste the current selection or clipboard content and translate it when opening the popup window using a middle click on the applet panel button"
+        "description": "Middle button action",
+        "tooltip": "Select the action to take when using the middle mouse button to click on the translator panel button"
     },
-    "middle-auto-play": {
-        "type": "switch",
-        "default": 0,
-        "description": "Play the translation on middle click",
-        "dependency" : "middle-auto-paste>0"
+    "ctrl-middle-button-action" : {
+        "type" : "combobox",
+        "default": 1,
+        "options": {
+            "Do nothing": 0,
+            "Show popup menu, paste Selection and translate": 1,
+            "Show popup menu, paste Clipboard and translate": 2,
+            "Show popup menu, paste Selection, translate and play": 3,
+            "Show popup menu, paste Clipboard, translate and play": 4,
+            "Play translation of Selection": 5,
+            "Play translation of Clipboard": 6
+        },
+        "description": "Ctrl + Middle button action",
+        "tooltip": "Select the action to take when holding the Ctrl key and using the middle mouse button to click on the translator panel button"
     }
 }

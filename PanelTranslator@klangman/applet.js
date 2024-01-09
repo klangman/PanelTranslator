@@ -31,6 +31,8 @@ const Clutter = imports.gi.Clutter;
 const UUID = "PanelTranslator@klangman";
 const ICON_SIZE = 16;
 
+const { hardcodedLanguages } = require('./languages_0_9_6_12.js');
+
 const AutoPasteType = {
    Disabled: 0,
    Selection: 1,
@@ -86,6 +88,8 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.infomenuitem.actor.set_reactive(false);
       this.menu.addMenuItem(this.infomenuitem);
       this.infomenuitem.actor.hide();
+      this.engine = "";
+      this.getEngine();
       this.languages = [];
       this.getLanguages();
    }
@@ -153,20 +157,32 @@ class PanelTranslatorApp extends Applet.IconApplet {
       Util.spawnCommandLineAsyncIO( "trans -list-all", Lang.bind(this, this.readLanguages) );
    }
 
+   // Read output from "trans -list-all", which is only available in newer versions of translate-shell
    readLanguages(stdout, stderr, exitCode) {
       if (exitCode===0) {
          let lines = stdout.split('\n');
-         let nameStart = lines[0].lastIndexOf(" ")+1;
-         let englishNameStart = lines[0].substring(0,nameStart-1).trim().lastIndexOf(" ")+1;
-         this.languages = [];
-         for (let i=0 ; i < lines.length ; i++) {
-            let code = lines[i].substring(0, englishNameStart).trim();
-            let englishName = lines[i].substring(englishNameStart, nameStart).trim();
-            let name = lines[i].substring(nameStart).trim();
-            if (code.length>0 && englishName.length>0 && name.length>0) {
-               this.languages.push( {code: code, englishName: englishName, name: name} );
+         if (lines[0] == "-list-all") {
+            // If the "trans -list-all" output starts with "-list-all" then we are dealing with a version of
+            // translate shell that does not support the "-list-all" option, so lets just use a hard coded
+            // list of languages! Also does not have a "auto" engine, so we'll use google in it's place.
+            this.languages = hardcodedLanguages;
+            if (this.engine == "auto") {
+               this.engine = "google";
+            }
+         } else {
+            let nameStart = lines[0].lastIndexOf(" ")+1;
+            let englishNameStart = lines[0].substring(0,nameStart-1).trim().lastIndexOf(" ")+1;
+            this.languages = [];
+            for (let i=0 ; i < lines.length ; i++) {
+               let code = lines[i].substring(0, englishNameStart).trim();
+               let englishName = lines[i].substring(englishNameStart, nameStart).trim();
+               let name = lines[i].substring(nameStart).trim();
+               if (code.length>0 && englishName.length>0 && name.length>0) {
+                  this.languages.push( {code: code, englishName: englishName, name: name} );
+               }
             }
          }
+         // Did we find the languages? If not, we need an error message
          if (this.languages.length == 0) {
             this.infomenuitem.label.set_text(_("Unable to query available languages from translate-shell"));
             this.infomenuitem.setIconSymbolicName("emblem-important");
@@ -195,196 +211,10 @@ class PanelTranslatorApp extends Applet.IconApplet {
       }
       return null;
    }
-}
-
-class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
-
-   constructor(applet) {
-      super();
-      this._applet = applet;
-
-      this.vertBox     = new St.BoxLayout({ important: true, vertical: true, x_expand: true });
-      this.languageBox = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
-      this.textBox     = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
-      this.actionBox   = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
-      //this.actionBox.set_style('border-top: 0px;padding:2px 2px;border-width:2px;padding:2px;');
-      this.vertBox.add_child(this.languageBox);
-      this.vertBox.add_child(this.textBox);
-      this.vertBox.add_child(this.actionBox);
-
-      // Setup the language selection box
-      this.switchButton = new ControlButton("object-flip-horizontal-symbolic", _("Swap Languages"), () => {
-         let from = this.fromLanguage;
-         let to = this.toLanguage;
-         if (this.fromLanguage) {
-            this.toLanguage = from;
-            this.toSearchEntry.set_text(this.toLanguage.englishName);
-         }
-         if (this.toLanguage) {
-            this.fromLanguage = to;
-            this.fromSearchEntry.set_text(this.fromLanguage.englishName);
-         }
-         let fromText = this.fromLang.get_text();
-         let toText = this.toLang.get_text();
-         if (toText)
-            this.fromLang.set_text(toText);
-         if (fromText)
-            this.toLang.set_text(fromText);
-      });
-
-      this.fromSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.START });
-      this.fromSearchEntry.get_clutter_text().connect( 'key-press-event', (actor, event) => {
-            let keyCode = event.get_key_symbol();
-            if (keyCode == Clutter.KEY_BackSpace) {
-               return false; // Ignore the BS press event!
-            }
-         });
-      this.fromSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {
-            let text = this.fromSearchEntry.get_clutter_text();
-            let cursorPos = text.get_cursor_position();
-            let txt = text.get_text();
-            if (cursorPos == -1) {
-               cursorPos = txt.length;
-            }
-            if (event.get_key_symbol() == Clutter.KEY_BackSpace) {
-               if (cursorPos > 0) {
-                  cursorPos--;
-                  if (cursorPos==0) {
-                     text.set_text("");
-                     return;
-                  }
-               }
-            }
-            let language = this._applet.getLanguage(txt.substring(0, cursorPos));
-            if (language != this.fromLanguage) {
-               this.fromLanguage = language;
-               this.fromLang.set_text("");
-            }
-            if (this.fromLanguage) {
-               text.set_text(this.fromLanguage.englishName);
-               text.set_cursor_position(cursorPos);
-            }
-         });
-
-      this.toSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, /*style: 'margin-right:5px;',*/ x_expand: true, x_align: Clutter.ActorAlign.END });
-      this.toSearchEntry.get_clutter_text().connect( 'key-press-event', (actor, event) => {
-         let keyCode = event.get_key_symbol();
-         if (keyCode == Clutter.KEY_BackSpace) {
-            return false; // Ignore the BS press event!
-         }
-         });
-      this.toSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {
-         let text = this.toSearchEntry.get_clutter_text();
-         let cursorPos = text.get_cursor_position();
-         let txt = text.get_text();
-         if (cursorPos == -1) {
-            cursorPos = txt.length;
-         }
-         if (event.get_key_symbol() == Clutter.KEY_BackSpace) {
-            if (cursorPos > 0) {
-               cursorPos--;
-               if (cursorPos==0) {
-                  text.set_text("");
-                  return;
-               }
-            }
-         }
-         let language = this._applet.getLanguage(txt.substring(0, cursorPos));
-         if (language != this.toLanguage) {
-            this.toLanguage = language;
-            this.toLang.set_text("");
-         }
-         if (this.toLanguage) {
-            text.set_text(this.toLanguage.englishName);
-            text.set_cursor_position(cursorPos);
-         }
-         });
-
-      this._searchFromIcon = new St.Icon({ style_class: 'menu-search-entry-icon', icon_name: 'edit-find', icon_type: St.IconType.SYMBOLIC });
-      this._searchToIcon = new St.Icon({ style_class: 'menu-search-entry-icon', icon_name: 'edit-find', icon_type: St.IconType.SYMBOLIC });
-      this.fromSearchEntry.set_secondary_icon(this._searchFromIcon);
-      this.toSearchEntry.set_secondary_icon(this._searchToIcon);
-      this.languageBox.add_child(this.fromSearchEntry);
-      this.languageBox.add_child(this.switchButton.getActor());
-      this.languageBox.add_child(this.toSearchEntry);
-
-      // Setup the text boxes
-      //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      this.fromLang = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:5px;'});
-      let text = this.fromLang.get_clutter_text();
-      text.set_line_wrap(true);
-      text.set_single_line_mode(false);
-      text.set_max_length(200);
-      text.connect('text-changed', () => {
-         let state = (this.fromLang.get_text().length != 0 );
-         this.playFrom.setEnabled(state);
-         this.translate.setEnabled(state);
-         });
-      //fromScrollView.set_child(this.fromLang);
-      this.textBox.add_child(this.fromLang);
-      //this.textBox.add_child(fromScrollView);
-
-      this.toLang = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180, style: 'margin-left:5px;'});
-      text = this.toLang.get_clutter_text();
-      text.set_line_wrap(true);
-      text.set_single_line_mode(false);
-      text.set_editable(false);
-      text.set_max_length(200);
-      text.connect('text-changed', () => {
-         let state = (this.toLang.get_text().length != 0 );
-         this.copy.setEnabled(state);
-         this.playTo.setEnabled(state);
-         });
-      this.textBox.add_child(this.toLang);
-
-      // Setup the action buttons
-      this.config = new ControlButton("system-run", _("Configure"), () => {this._applet.menu.close(); this._applet.configureApplet()});
-      this.playFrom = new ControlButton("audio-speakers-symbolic", _("Play"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + this.fromLang.get_text() + "\"");
-         });
-      this.playFrom.setEnabled(false);
-      this.paste = new ControlButton("edit-paste-symbolic", _("Paste"), () => {
-         let clipboard = St.Clipboard.get_default();
-         clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {this.clipboardText(cb, text, true);} );
-         });
-      this.clear = new ControlButton("process-stop-symbolic", _("Clear"), () => {
-         this.fromLang.set_text("");
-         this.toLang.set_text("");
-         });
-      this.translate = new ControlButton("media-playback-start-symbolic", _("Translate"), () => {
-         Util.spawnCommandLineAsyncIO( "trans -b -e " + this.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromLang.get_text() + "\"", Lang.bind(this, this.readTranslation) );
-         });
-      this.translate.setEnabled(false);
-      let toBtnBox = new St.BoxLayout({x_align: Clutter.ActorAlign.END, x_expand: true});
-      this.copy = new ControlButton("edit-copy-symbolic", _("Copy"), () => {
-         St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, this.toLang.get_text());
-         });
-      this.copy.getActor().set_x_expand(true);
-      this.copy.setEnabled(false);
-      this.copy.getActor().set_x_align(Clutter.ActorAlign.END);
-      this.playTo = new ControlButton("audio-speakers-symbolic", _("Play Translation"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toLang.get_text() + "\"");
-         });
-      this.playTo.setEnabled(false);
-
-      this.actionBox.add_child(this.config.getActor());
-      this.actionBox.add_child(this.paste.getActor());
-      this.actionBox.add_child(this.clear.getActor());
-      this.actionBox.add_child(this.playFrom.getActor());
-      this.actionBox.add_child(this.translate.getActor());
-      toBtnBox.add_child(this.copy.getActor());
-      toBtnBox.add_child(this.playTo.getActor());
-      this.actionBox.add_child(toBtnBox);
-
-      this.addActor(this.vertBox, {expand: true});
-      this.engine = "";
-      this.getEngine();
-      this._applet._signalManager.connect(this._applet.settings, "changed::translate-engine", this.getEngine, this);
-   }
 
    getEngine() {
       let ret;
-      let number = this._applet.settings.getValue("translate-engine");
+      let number = this.settings.getValue("translate-engine");
       switch (number) {
          case Engine.Apertium:
             ret = "apertium";
@@ -393,7 +223,11 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
             ret = "aspell";
             break;
          case Engine.Auto:
-            ret = "auto";
+            if (this.languages == hardcodedLanguages) {
+               ret = "google";  // If we are using hardcodedLanguages then we think this is translate-shell 0.9.6.12 which does not support "auto"
+            } else {
+               ret = "auto";
+            }
             break;
          case Engine.Bing:
             ret = "bing";
@@ -414,16 +248,195 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.engine = ret;
    }
 
+}
+
+class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
+
+   constructor(applet) {
+      super();
+      this.deletedSelection = false;
+      this._applet = applet;
+
+      this.vertBox     = new St.BoxLayout({ important: true, vertical: true, x_expand: true });
+      this.languageBox = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
+      this.textBox     = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
+      this.actionBox   = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
+      this.vertBox.add_child(this.languageBox);
+      this.vertBox.add_child(this.textBox);
+      this.vertBox.add_child(this.actionBox);
+
+      // Setup the language selection box
+      this.switchButton = new ControlButton("object-flip-horizontal-symbolic", _("Swap Languages"), () => {
+         let from = this.fromLanguage;
+         let to = this.toLanguage;
+         if (this.fromLanguage) {
+            this.toLanguage = from;
+            this.toSearchEntry.set_text(this.toLanguage.englishName);
+         }
+         if (this.toLanguage) {
+            this.fromLanguage = to;
+            this.fromSearchEntry.set_text(this.fromLanguage.englishName);
+         }
+         let fromText = this.fromTextBox.get_text();
+         let toText = this.toTextBox.get_text();
+         if (toText)
+            this.fromTextBox.set_text(toText);
+         if (fromText)
+            this.toTextBox.set_text(fromText);
+      });
+
+      this.fromSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.START });
+      this.fromSearchEntry.get_clutter_text().connect( 'key-press-event', Lang.bind(this, this._onKeyPressEvent) );
+      this.fromSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {this._onKeyReleaseEvent(actor, event, this.fromLanguage); } );
+      this.toSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.END });
+      this.toSearchEntry.get_clutter_text().connect( 'key-press-event', Lang.bind(this, this._onKeyPressEvent) );
+      this.toSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {this._onKeyReleaseEvent(actor, event, this.toLanguage); } );
+      this._searchFromIcon = new St.Icon({ style_class: 'menu-search-entry-icon', icon_name: 'edit-find', icon_type: St.IconType.SYMBOLIC });
+      this._searchToIcon = new St.Icon({ style_class: 'menu-search-entry-icon', icon_name: 'edit-find', icon_type: St.IconType.SYMBOLIC });
+      this.fromSearchEntry.set_secondary_icon(this._searchFromIcon);
+      this.toSearchEntry.set_secondary_icon(this._searchToIcon);
+      this.languageBox.add_child(this.fromSearchEntry);
+      this.languageBox.add_child(this.switchButton.getActor());
+      this.languageBox.add_child(this.toSearchEntry);
+
+      // Setup the from/to text boxes
+      //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:5px;'});
+      let text = this.fromTextBox.get_clutter_text();
+      text.set_line_wrap(true);
+      text.set_single_line_mode(false);
+      text.set_max_length(200);
+      text.connect('text-changed', () => {
+         let state = (this.fromTextBox.get_text().length != 0 );
+         this.playFrom.setEnabled(state);
+         this.translate.setEnabled(state);
+         });
+      //fromScrollView.set_child(this.fromTextBox);
+      this.textBox.add_child(this.fromTextBox);
+      //this.textBox.add_child(fromScrollView);
+
+      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180, style: 'margin-left:5px;'});
+      text = this.toTextBox.get_clutter_text();
+      text.set_line_wrap(true);
+      text.set_single_line_mode(false);
+      text.set_editable(false);
+      text.set_max_length(200);
+      text.connect('text-changed', () => {
+         let state = (this.toTextBox.get_text().length != 0 );
+         this.copy.setEnabled(state);
+         this.playTo.setEnabled(state);
+         });
+      this.textBox.add_child(this.toTextBox);
+
+      // Setup the action buttons
+      this.config = new ControlButton("system-run", _("Configure"), () => {this._applet.menu.close(); this._applet.configureApplet()});
+      this.playFrom = new ControlButton("audio-speakers-symbolic", _("Play"), () => {
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + this.fromTextBox.get_text() + "\"");
+         });
+      this.playFrom.setEnabled(false);
+      this.paste = new ControlButton("edit-paste-symbolic", _("Paste"), () => {
+         let clipboard = St.Clipboard.get_default();
+         clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {this.clipboardText(cb, text, true);} );
+         });
+      this.clear = new ControlButton("process-stop-symbolic", _("Clear"), () => {
+         this.fromTextBox.set_text("");
+         this.toTextBox.set_text("");
+         });
+      this.translate = new ControlButton("media-playback-start-symbolic", _("Translate"), () => {
+         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+         });
+      this.translate.setEnabled(false);
+      let toBtnBox = new St.BoxLayout({x_align: Clutter.ActorAlign.END, x_expand: true});
+      this.copy = new ControlButton("edit-copy-symbolic", _("Copy"), () => {
+         St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, this.toTextBox.get_text());
+         });
+      this.copy.getActor().set_x_expand(true);
+      this.copy.setEnabled(false);
+      this.copy.getActor().set_x_align(Clutter.ActorAlign.END);
+      this.playTo = new ControlButton("audio-speakers-symbolic", _("Play Translation"), () => {
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toTextBox.get_text() + "\"");
+         });
+      this.playTo.setEnabled(false);
+
+      this.actionBox.add_child(this.config.getActor());
+      this.actionBox.add_child(this.paste.getActor());
+      this.actionBox.add_child(this.clear.getActor());
+      this.actionBox.add_child(this.playFrom.getActor());
+      this.actionBox.add_child(this.translate.getActor());
+      toBtnBox.add_child(this.copy.getActor());
+      toBtnBox.add_child(this.playTo.getActor());
+      this.actionBox.add_child(toBtnBox);
+
+      this.addActor(this.vertBox, {expand: true});
+      this._applet._signalManager.connect(this._applet.settings, "changed::translate-engine", this._applet.getEngine, this._applet);
+   }
+
+   // Handles key press events for the from/to language search entry widgets
+   _onKeyPressEvent(actor, event) {
+      let keyCode = event.get_key_symbol();
+      if (keyCode == Clutter.KEY_BackSpace) {
+         //let text = actor.get_clutter_text();
+         let selection = actor.get_selection();
+         if (selection==null || selection.length==0) {
+            this.deletedSelection = false;
+         } else {
+            this.deletedSelection = true;
+         }
+      }
+   }
+
+   // Handles key release events for the from/to language search entry widgets
+   _onKeyReleaseEvent(actor, event, curLanguage) {
+      let cursorPos = actor.get_cursor_position();
+      let txt = actor.get_text();
+      if (cursorPos == -1) {
+         cursorPos = txt.length;
+      }
+      if (event.get_key_symbol() == Clutter.KEY_BackSpace) {
+         if (cursorPos > 0) {
+            if (this.deletedSelection!=false) {
+               cursorPos--;
+            }
+            if (cursorPos==0) {
+               log( "a" )
+               actor.set_text("");
+               return;
+            }
+         }
+      }
+      let txtSubstring = txt.substring(0, cursorPos);
+      let language = this._applet.getLanguage(txtSubstring);
+      if (language != curLanguage) {
+         if (language==null && txtSubstring.startsWith(curLanguage.englishName)) {
+            actor.set_text(curLanguage.englishName);
+         } else {
+            curLanguage = language;
+            // Set the text box to "" since the associated language has been changed.
+            if (actor == this.fromSearchEntry.get_clutter_text()) {
+               this.fromLanguage = language;
+               this.fromTextBox.set_text("");
+            } else {
+               this.toLanguage = language;
+               this.toTextBox.set_text("");
+            }
+         }
+      }
+      if (curLanguage) {
+         actor.set_text(curLanguage.englishName);
+         actor.set_cursor_position(cursorPos);
+      }
+   }
+
    readTranslation(stdout, stderr, exitCode) {
       if (exitCode===0) {
-         this.toLang.set_text( stdout.trim() );
+         this.toTextBox.set_text( stdout.trim() );
       }
       return exitCode;
    }
 
    playTranslation(stdout, stderr, exitCode) {
       if (this.readTranslation(stdout, stderr, exitCode)==0) {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toLang.get_text() + "\"");
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toTextBox.get_text() + "\"");
       }
    }
 
@@ -437,15 +450,15 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
    }
 
    clipboardText(cb, text, translate, play=false) {
-      this.fromLang.set_text(text);
+      this.fromTextBox.set_text(text);
       if (translate) {
          if (play) {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromLang.get_text() + "\"", Lang.bind(this, this.playTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.playTranslation) );
          } else {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromLang.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
          }
       } else {
-         this.toLang.set_text("");
+         this.toTextBox.set_text("");
       }
    }
 
@@ -467,7 +480,6 @@ class ControlButton {
 
         this.button = new St.Button({style_class: 'menu-favorites-button' /*'panel-translator-button' 'menu-favorites-button' 'keyboard-key'*/});
         this.button.connect('clicked', callback);
-        //this.button.set_style('padding-left:5px; padding-right:5px;);
 
         this.icon = new St.Icon({ icon_type: St.IconType.SYMBOLIC, icon_name: icon, icon_size: ICON_SIZE });
         this.button.set_child(this.icon);

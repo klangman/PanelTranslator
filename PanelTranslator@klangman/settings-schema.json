@@ -31,8 +31,8 @@
             "Spell": 6,
             "Yandex": 7
         },
-        "description": "Engine",
-        "tooltip": "Most engines don't support play back and some don't even translate, others just report HTTP errors. So it's best to use \"auto\" and let translate-shell decide what translator to use."
+        "description": "Engine (Auto/Google recommended!)",
+        "tooltip": "Most engines don't support play back and some don't even translate, others just report HTTP errors. So it's best to use \"Auto\" and let translate-shell decide what translator to use."
     },
 
     "auto-header": {
@@ -61,10 +61,10 @@
         "default": 1,
         "options": {
             "Do nothing": 0,
-            "Show popup menu, paste Selection and translate": 1,
-            "Show popup menu, paste Clipboard and translate": 2,
-            "Show popup menu, paste Selection, translate and play": 3,
-            "Show popup menu, paste Clipboard, translate and play": 4,
+            "Show popup dialog and translate Selection": 1,
+            "Show popup dialog and translate Clipboard": 2,
+            "Show popup dialog, translate Selection and play": 3,
+            "Show popup dialog, translate Clipboard and play": 4,
             "Play translation of Selection": 5,
             "Play translation of Clipboard": 6
         },
@@ -76,10 +76,10 @@
         "default": 5,
         "options": {
             "Do nothing": 0,
-            "Show popup menu, paste Selection and translate": 1,
-            "Show popup menu, paste Clipboard and translate": 2,
-            "Show popup menu, paste Selection, translate and play": 3,
-            "Show popup menu, paste Clipboard, translate and play": 4,
+            "Show popup dialog and translate Selection": 1,
+            "Show popup dialog and translate Clipboard": 2,
+            "Show popup dialog, translate Selection and play": 3,
+            "Show popup dialog, translate Clipboard and play": 4,
             "Play translation of Selection": 5,
             "Play translation of Clipboard": 6
         },

@@ -8,7 +8,7 @@ Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/transl
 ## Features
 
 1. Type text into a popup dialog from the Cinnamon panel and translate to the language of your choice
-2. Optional automatically translate and playback test from the current selection or clipboard
+2. Optional automatically translate and playback (Text-to-Speech) text from the current selection or clipboard
 3. Middle mouse button can be used to perform 6 different translation action
 4. Ctrl + Middle mouse button can be used to perform 6 different translation action
 
@@ -18,6 +18,16 @@ The [trantlate-shell](https://github.com/soimort/translate-shell) package must b
 
 ```
 sudo apt-get install translate-shell
+```
+
+It's best to install translate-shell 0.9.7.1 for more supported languages and other improvements, but the Mint 21.2 repositories only have version 0.9.6.12 currently. You might want to visit the translate-shell website below to learn how to install the most up to date version, but this is optional.
+
+https://www.soimort.org/translate-shell/#installation
+
+In order to allow for Text-to-Speech functionality one of mplayer, mpv, mpg123, or eSpeak must be installed. I tested with mplayer mostly.
+
+```
+sudo apt-get install mplayer
 ```
 
 ## Installation

@@ -375,7 +375,6 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
    _onKeyPressEvent(actor, event) {
       let keyCode = event.get_key_symbol();
       if (keyCode == Clutter.KEY_BackSpace) {
-         //let text = actor.get_clutter_text();
          let selection = actor.get_selection();
          if (selection==null || selection.length==0) {
             this.deletedSelection = false;

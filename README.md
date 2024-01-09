@@ -12,6 +12,11 @@ Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/transl
 3. Middle mouse button can be used to perform 6 different translation action
 4. Ctrl + Middle mouse button can be used to perform 6 different translation action
 
+## Current Limitations
+
+1. The text boxes are using St.Entry widgets without scroll bars so I have **limited the text to 200 characters** until I can find a way to have a type of widget that supports scroll bars. It also seems like translation-shell can not perform "Text-to-Speech" when the text is more than 200 characters.
+2. In my testing, only the Goggle translate engine works consistently, and it's the only one that would perform Text-to-Speech for me. I allow other engines in case some future versions of translate-shell (or different OS setups) work better then what I have seen.
+
 ## Requirements
 
 The [trantlate-shell](https://github.com/soimort/translate-shell) package must be installed for this applet to operate correctly.

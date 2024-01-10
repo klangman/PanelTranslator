@@ -3,19 +3,20 @@ A translator applet for the Cinnamon desktop environment
 
 ![screen shot](PanelTranslator@klangman/screenshot.png)
 
-Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/translator) and others (via [trantlate-shell](https://github.com/soimort/translate-shell)) to translate text into more then 150 languages.
+Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/translator) and others (via [trantlate-shell](https://github.com/soimort/translate-shell)) to translate text into more then 150 languages (depending on the version of translate-shell you install).
 
 ## Features
 
 1. Type text into a popup dialog from the Cinnamon panel and translate to the language of your choice
-2. Optional automatically translate and playback (Text-to-Speech) text from the current selection or clipboard
-3. Middle mouse button can be used to perform 6 different translation action
-4. Ctrl + Middle mouse button can be used to perform 6 different translation action
+2. Optional automatically translate and playback (Text-to-Speech) from the current selection or clipboard
+3. Middle mouse button can be configured to perform 6 different translation actions
+4. Ctrl + Middle mouse button can be configured to perform 6 different translation actions
 
 ## Current Limitations
 
-1. The text boxes are using St.Entry widgets without scroll bars so I have **limited the text to 200 characters** until I can find a way to have a type of widget that supports scroll bars. It also seems like translation-shell can not perform "Text-to-Speech" when the text is more than 200 characters.
-2. In my testing, only the Goggle translate engine works consistently, and it's the only one that would perform Text-to-Speech for me. I allow other engines in case some future versions of translate-shell (or different OS setups) work better then what I have seen.
+1. The text boxes are using St.Entry widgets without scroll bars so I have ***limited the text to 200 characters*** until I can find a way to have a type of widget that supports scroll bars. It also seems like translation-shell can not perform "Text-to-Speech" when the text is more than than 200 characters.
+2. In my testing, only the Goggle translate engine works consistently (but Bing worked most of the time), and it's the only one that would perform Text-to-Speech for me. I allow other engines to be selected in case some future versions of translate-shell (or different OS setups) works better then what I have seen.
+3. Currently only the English name for each language can be entered into the from/to language entry fields.
 
 ## Requirements
 

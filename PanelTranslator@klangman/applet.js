@@ -187,6 +187,9 @@ class PanelTranslatorApp extends Applet.IconApplet {
             this.infomenuitem.label.set_text(_("Unable to query available languages from translate-shell"));
             this.infomenuitem.setIconSymbolicName("emblem-important");
             this.infomenuitem.actor.show();
+         } else {
+            this.translatorPopup.setFromLanguage( this.getLanguage( this.settings.getValue("default-from-language") ) );
+            this.translatorPopup.setToLanguage(   this.getLanguage( this.settings.getValue("default-to-language") ) );
          }
       } else if (exitCode===127){
          this.infomenuitem.label.set_text(_("Required \"trans\" command not found, please install translate-shell"));
@@ -197,8 +200,6 @@ class PanelTranslatorApp extends Applet.IconApplet {
          this.infomenuitem.setIconSymbolicName("emblem-important");
          this.infomenuitem.actor.show();
       }
-      this.translatorPopup.setFromLanguage( this.getLanguage( this.settings.getValue("default-from-language") ) );
-      this.translatorPopup.setToLanguage(   this.getLanguage( this.settings.getValue("default-to-language") ) );
    }
 
    getLanguage(name) {
@@ -338,7 +339,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          let clipboard = St.Clipboard.get_default();
          clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {this.clipboardText(cb, text, true);} );
          });
-      this.clear = new ControlButton("process-stop-symbolic", _("Clear"), () => {
+      this.clear = new ControlButton("edit-clear", _("Clear"), () => {
          this.fromTextBox.set_text("");
          this.toTextBox.set_text("");
          });

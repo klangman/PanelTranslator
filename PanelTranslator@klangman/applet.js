@@ -46,7 +46,9 @@ const MiddleBtnAction = {
    PopupSelectionPlay: 3,
    PopupClipboardPlay: 4,
    PlaySelection: 5,
-   PlayClipboard: 6
+   PlayClipboard: 6,
+   TransSelectionCopy: 7,
+   TransClipboardCopy: 8
 }
 
 const Engine = {
@@ -108,28 +110,28 @@ class PanelTranslatorApp extends Applet.IconApplet {
          }
          switch(action) {
             case MiddleBtnAction.PopupSelection:
-               log( "PopupSelection" );
                this.openPopupMenu(AutoPasteType.Selection, false);
                break;
             case MiddleBtnAction.PopupClipboard:
-               log( "PopupClipboard" );
                this.openPopupMenu(AutoPasteType.Clipboard, false);
                break;
             case MiddleBtnAction.PopupSelectionPlay:
-               log( "PopupSelectionPlay" );
                this.openPopupMenu(AutoPasteType.Selection, true);
                break;
             case MiddleBtnAction.PopupClipboardPlay:
-               log( "PopupClipboardPlay" );
                this.openPopupMenu(AutoPasteType.Clipboard, true);
                break;
             case MiddleBtnAction.PlaySelection:
-               log( "PlaySelection" );
                this.translatorPopup.translateClipboard(AutoPasteType.Selection, true);
                break;
             case MiddleBtnAction.PlayClipboard:
-               log( "PlayClipboard" );
                this.translatorPopup.translateClipboard(AutoPasteType.Clipboard, true);
+               break;
+            case MiddleBtnAction.TransSelectionCopy:
+               this.translatorPopup.translateClipboard(AutoPasteType.Selection, false, true);
+               break;
+            case MiddleBtnAction.TransClipboardCopy:
+               this.translatorPopup.translateClipboard(AutoPasteType.Clipboard, false, true);
                break;
          }
          return;
@@ -258,7 +260,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.deletedSelection = false;
       this._applet = applet;
 
-      this.vertBox     = new St.BoxLayout({ important: true, vertical: true, x_expand: true });
+      this.vertBox     = new St.BoxLayout({ important: true, vertical: true, x_expand: true, style: 'padding-right:10px;padding-left:10px;'});
       this.languageBox = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
       this.textBox     = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
       this.actionBox   = new St.BoxLayout({ important: true, vertical: false, style: 'border-width:2px;padding:2px;', x_align: Clutter.ActorAlign.FILL, x_expand: true});
@@ -302,7 +304,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
       // Setup the from/to text boxes
       //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:5px;'});
+      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180});
       let text = this.fromTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
@@ -312,11 +314,14 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          this.playFrom.setEnabled(state);
          this.translate.setEnabled(state);
          });
+      text.connect('activate', (actor, event) => {
+         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+         });
       //fromScrollView.set_child(this.fromTextBox);
       this.textBox.add_child(this.fromTextBox);
       //this.textBox.add_child(fromScrollView);
 
-      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180, style: 'margin-left:5px;'});
+      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180});
       text = this.toTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
@@ -398,7 +403,6 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
                cursorPos--;
             }
             if (cursorPos==0) {
-               log( "a" )
                actor.set_text("");
                return;
             }
@@ -440,20 +444,29 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       }
    }
 
-   translateClipboard(autoPaste, play) {
-      let clipboard = St.Clipboard.get_default();
-      if (autoPaste != AutoPasteType.Selection) {
-         clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {this.clipboardText(cb, text, true, play);} );
-      } else {
-         clipboard.get_text(St.ClipboardType.PRIMARY, (cb, text) => {this.clipboardText(cb, text, true, play);} );
+   copyTranslation(stdout, stderr, exitCode) {
+      if (this.readTranslation(stdout, stderr, exitCode)==0) {
+         St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, this.toTextBox.get_text());
       }
    }
 
-   clipboardText(cb, text, translate, play=false) {
+   translateClipboard(autoPaste, play, copy=false) {
+      let clipboard = St.Clipboard.get_default();
+      if (autoPaste != AutoPasteType.Selection) {
+         clipboard.get_text(St.ClipboardType.CLIPBOARD, (cb, text) => {this.clipboardText(cb, text, true, play, copy);} );
+      } else {
+         clipboard.get_text(St.ClipboardType.PRIMARY, (cb, text) => {this.clipboardText(cb, text, true, play, copy);} );
+      }
+   }
+
+   // Callback that gets the clipboard text then performs some action with that text.
+   clipboardText(cb, text, translate, play=false, copy=false) {
       this.fromTextBox.set_text(text);
       if (translate) {
          if (play) {
             Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.playTranslation) );
+         } else if (copy) {
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.copyTranslation) );
          } else {
             Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
          }

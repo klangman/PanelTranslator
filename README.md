@@ -16,7 +16,6 @@ Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/transl
 
 1. The text boxes are using St.Entry widgets without scroll bars so I have ***limited the text to 200 characters*** until I can find a way to have a type of widget that supports scroll bars. It also seems like translation-shell can not perform "Text-to-Speech" when the text is more than than 200 characters.
 2. In my testing, only the Goggle translate engine works consistently (but Bing worked most of the time), and it's the only one that would perform Text-to-Speech for me. I allow other engines to be selected in case some future versions of translate-shell (or different OS setups) works better then what I have seen.
-3. Currently only the English name for each language can be entered into the from/to language entry fields.
 
 ## Requirements
 

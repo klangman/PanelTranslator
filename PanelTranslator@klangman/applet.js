@@ -190,8 +190,10 @@ class PanelTranslatorApp extends Applet.IconApplet {
             this.infomenuitem.setIconSymbolicName("emblem-important");
             this.infomenuitem.actor.show();
          } else {
-            this.translatorPopup.setFromLanguage( this.getLanguage( this.settings.getValue("default-from-language") ) );
-            this.translatorPopup.setToLanguage(   this.getLanguage( this.settings.getValue("default-to-language") ) );
+            let fromDefName = this.settings.getValue("default-from-language");
+            let toDefName = this.settings.getValue("default-to-language");
+            this.translatorPopup.setFromLanguage( this.getLanguage( fromDefName ), fromDefName );
+            this.translatorPopup.setToLanguage(   this.getLanguage( toDefName ), toDefName );
          }
       } else if (exitCode===127){
          this.infomenuitem.label.set_text(_("Required \"trans\" command not found, please install translate-shell"));
@@ -208,7 +210,9 @@ class PanelTranslatorApp extends Applet.IconApplet {
       if (name.length == 0)
          return null;
       for (let i=0 ; i<this.languages.length ; i++ ) {
-         if (this.languages[i].englishName.toLowerCase().startsWith(name.toLowerCase())) {
+         if (this.languages[i].englishName.toLowerCase().startsWith(name.toLowerCase()) ||
+             this.languages[i].name.toLocaleLowerCase(this.languages[i].code).startsWith(name.toLocaleLowerCase(this.languages[i].code)))
+          {
             return this.languages[i];
          }
       }
@@ -271,14 +275,16 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       // Setup the language selection box
       this.switchButton = new ControlButton("object-flip-horizontal-symbolic", _("Swap Languages"), () => {
          let from = this.fromLanguage;
+         let fromTxt = this.fromSearchEntry.get_text();
          let to = this.toLanguage;
+         let toTxt = this.toSearchEntry.get_text();
          if (this.fromLanguage) {
             this.toLanguage = from;
-            this.toSearchEntry.set_text(this.toLanguage.englishName);
+            this.toSearchEntry.set_text(fromTxt);
          }
          if (this.toLanguage) {
             this.fromLanguage = to;
-            this.fromSearchEntry.set_text(this.fromLanguage.englishName);
+            this.fromSearchEntry.set_text(toTxt);
          }
          let fromText = this.fromTextBox.get_text();
          let toText = this.toTextBox.get_text();
@@ -304,16 +310,12 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
       // Setup the from/to text boxes
       //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180});
+      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:2px;'});
       let text = this.fromTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
       text.set_max_length(200);
-      text.connect('text-changed', () => {
-         let state = (this.fromTextBox.get_text().length != 0 );
-         this.playFrom.setEnabled(state);
-         this.translate.setEnabled(state);
-         });
+      text.connect('text-changed', () => {this.enableTranslateIfPossible();});
       text.connect('activate', (actor, event) => {
          Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
          });
@@ -321,7 +323,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.textBox.add_child(this.fromTextBox);
       //this.textBox.add_child(fromScrollView);
 
-      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180});
+      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180, style: 'margin-left:2px;'});
       text = this.toTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
@@ -411,9 +413,11 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       let txtSubstring = txt.substring(0, cursorPos);
       let language = this._applet.getLanguage(txtSubstring);
       if (language != curLanguage) {
-         if (language==null && txtSubstring.startsWith(curLanguage.englishName)) {
-            actor.set_text(curLanguage.englishName);
-         } else {
+         //if (language==null && curLanguage.englishName.toLowerCase().startsWith(txtSubstring)) {
+         //   actor.set_text(curLanguage.englishName);
+         //} else if (language==null && curLanguage.name.toLowerCase().startsWith(txtSubstring)) {
+         //   actor.set_text(curLanguage.name);
+         //} else {
             curLanguage = language;
             // Set the text box to "" since the associated language has been changed.
             if (actor == this.fromSearchEntry.get_clutter_text()) {
@@ -423,10 +427,15 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
                this.toLanguage = language;
                this.toTextBox.set_text("");
             }
-         }
+            this.enableTranslateIfPossible();
+         //}
       }
       if (curLanguage) {
-         actor.set_text(curLanguage.englishName);
+         if (curLanguage.englishName.toLowerCase().startsWith(txtSubstring.toLowerCase())) {
+            actor.set_text(curLanguage.englishName);
+         } else {
+            actor.set_text(curLanguage.name);
+         }
          actor.set_cursor_position(cursorPos);
       }
    }
@@ -475,14 +484,20 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       }
    }
 
-   setFromLanguage(lang) {
+   setFromLanguage(lang, name) {
       this.fromLanguage = lang;
-      this.fromSearchEntry.set_text(lang.englishName);
+      this.fromSearchEntry.set_text(name);
    }
 
-   setToLanguage(lang) {
+   setToLanguage(lang, name) {
       this.toLanguage = lang;
-      this.toSearchEntry.set_text(lang.englishName);
+      this.toSearchEntry.set_text(name);
+   }
+
+   enableTranslateIfPossible() {
+      let state = (this.fromTextBox.get_text().length != 0 && this.fromLanguage && this.toLanguage );
+      this.playFrom.setEnabled(state);
+      this.translate.setEnabled(state);
    }
 }
 

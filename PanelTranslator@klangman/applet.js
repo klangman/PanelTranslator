@@ -338,6 +338,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
       // Setup the action buttons
       this.config = new ControlButton("system-run", _("Configure"), () => {this._applet.menu.close(); this._applet.configureApplet()});
+      this.help = new ControlButton("help-about", _("Help"), () => { Util.spawnCommandLineAsync("/usr/bin/xdg-open https://cinnamon-spices.linuxmint.com/applets/view/385"); });
       this.playFrom = new ControlButton("audio-speakers-symbolic", _("Play"), () => {
          Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + this.fromTextBox.get_text() + "\"");
          });
@@ -367,6 +368,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.playTo.setEnabled(false);
 
       this.actionBox.add_child(this.config.getActor());
+      this.actionBox.add_child(this.help.getActor());
       this.actionBox.add_child(this.paste.getActor());
       this.actionBox.add_child(this.clear.getActor());
       this.actionBox.add_child(this.playFrom.getActor());
@@ -399,7 +401,8 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       if (cursorPos == -1) {
          cursorPos = txt.length;
       }
-      if (event.get_key_symbol() == Clutter.KEY_BackSpace) {
+      let key = event.get_key_symbol();
+      if (key == Clutter.KEY_BackSpace) {
          if (cursorPos > 0) {
             if (this.deletedSelection!=false) {
                cursorPos--;
@@ -412,23 +415,32 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       }
       let txtSubstring = txt.substring(0, cursorPos);
       let language = this._applet.getLanguage(txtSubstring);
+      if (language && key == Clutter.KEY_Up || key == Clutter.KEY_Down) {
+         let useEnglish = language.englishName.toLowerCase().startsWith(txtSubstring.toLowerCase())
+         let idx = this._applet.languages.indexOf(language);
+         if (key == Clutter.KEY_Up && idx > 0) {
+            language = this._applet.languages[idx-1];
+         } else if (key == Clutter.KEY_Down && idx < this._applet.languages.length-1) {
+            language = this._applet.languages[idx+1];
+         }
+         if (useEnglish) {
+            txtSubstring = language.englishName;
+         } else {
+            txtSubstring = language.name;
+         }
+         cursorPos = txtSubstring.length;
+      }
       if (language != curLanguage) {
-         //if (language==null && curLanguage.englishName.toLowerCase().startsWith(txtSubstring)) {
-         //   actor.set_text(curLanguage.englishName);
-         //} else if (language==null && curLanguage.name.toLowerCase().startsWith(txtSubstring)) {
-         //   actor.set_text(curLanguage.name);
-         //} else {
-            curLanguage = language;
-            // Set the text box to "" since the associated language has been changed.
-            if (actor == this.fromSearchEntry.get_clutter_text()) {
-               this.fromLanguage = language;
-               this.fromTextBox.set_text("");
-            } else {
-               this.toLanguage = language;
-               this.toTextBox.set_text("");
-            }
-            this.enableTranslateIfPossible();
-         //}
+         curLanguage = language;
+         // Set the text box to "" since the associated language has been changed.
+         if (actor == this.fromSearchEntry.get_clutter_text()) {
+            this.fromLanguage = language;
+            this.fromTextBox.set_text("");
+         } else {
+            this.toLanguage = language;
+            this.toTextBox.set_text("");
+         }
+         this.enableTranslateIfPossible();
       }
       if (curLanguage) {
          if (curLanguage.englishName.toLowerCase().startsWith(txtSubstring.toLowerCase())) {

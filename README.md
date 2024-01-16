@@ -5,6 +5,11 @@ A translator applet for the Cinnamon desktop environment
 
 Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/translator) and others (via [trantlate-shell](https://github.com/soimort/translate-shell)) to translate text into more then 150 languages (depending on the version of translate-shell you install).
 
+This applet is now available in the cinnamon-spices-applets repo meaning it can be found in the "Applets" tool under
+the "Download" tab from the cinnamon desktop settings and at the following URL:
+
+https://cinnamon-spices.linuxmint.com/applets/view/385
+
 ## Features
 
 1. Type text into a popup dialog from the Cinnamon panel and translate to the language of your choice

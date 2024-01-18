@@ -3,7 +3,7 @@ A translator applet for the Cinnamon desktop environment
 
 ![screen shot](PanelTranslator@klangman/screenshot.png)
 
-Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/translator) and others (via [trantlate-shell](https://github.com/soimort/translate-shell)) to translate text into more then 150 languages (depending on the version of translate-shell you install).
+Uses [Google](https://translate.google.com/), [Bing](https://www.bing.com/translator) and others (via [translate-shell](https://github.com/soimort/translate-shell)) to translate text into more then 150 languages (depending on the version of translate-shell you install).
 
 This applet is now available in the cinnamon-spices-applets repo meaning it can be found in the "Applets" tool under
 the "Download" tab from the cinnamon desktop settings and at the following URL:
@@ -14,8 +14,8 @@ https://cinnamon-spices.linuxmint.com/applets/view/385
 
 1. Type text into a popup dialog from the Cinnamon panel and translate to the language of your choice
 2. Optional automatically translate and playback (Text-to-Speech) from the current selection or clipboard
-3. Middle mouse button can be configured to perform 6 different translation actions
-4. Ctrl + Middle mouse button can be configured to perform 6 different translation actions
+3. Middle mouse button can be configured to perform 8 different translation actions
+4. Ctrl + Middle mouse button can be configured to perform 8 different translation actions
 
 ## Current Limitations
 
@@ -24,7 +24,7 @@ https://cinnamon-spices.linuxmint.com/applets/view/385
 
 ## Requirements
 
-The [trantlate-shell](https://github.com/soimort/translate-shell) package must be installed for this applet to operate correctly.
+The [translate-shell](https://github.com/soimort/translate-shell) package must be installed for this applet to operate correctly.
 
 ```
 sudo apt-get install translate-shell

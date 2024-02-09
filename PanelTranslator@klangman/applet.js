@@ -27,9 +27,12 @@ const Util = imports.misc.util;
 const Lang = imports.lang;
 const Tooltips = imports.ui.tooltips;
 const Clutter = imports.gi.Clutter;
+const Config = imports.misc.config;
 
 const UUID = "PanelTranslator@klangman";
 const ICON_SIZE = 16;
+
+const majorVersion = parseInt(Config.PACKAGE_VERSION.substring(0,1));
 
 const { hardcodedLanguages } = require('./languages_0_9_6_12.js');
 
@@ -194,6 +197,7 @@ class PanelTranslatorApp extends Applet.IconApplet {
             let toDefName = this.settings.getValue("default-to-language");
             this.translatorPopup.setFromLanguage( this.getLanguage( fromDefName ), fromDefName );
             this.translatorPopup.setToLanguage(   this.getLanguage( toDefName ), toDefName );
+            this.updateTooltip( fromDefName, toDefName );
          }
       } else if (exitCode===127){
          this.infomenuitem.label.set_text(_("Required \"trans\" command not found, please install translate-shell"));
@@ -255,6 +259,13 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.engine = ret;
    }
 
+   updateTooltip(fromLanguageTxt, toLanguageTxt) {
+      if(majorVersion > 4 && fromLanguageTxt.length > 0 && toLanguageTxt.length > 0){
+         this.set_applet_tooltip("<b>" + _("Translator") + "</b>" + "\n" + fromLanguageTxt + " \u{2B95} " + toLanguageTxt, true);
+      } else {
+         this.set_applet_tooltip(_("Translator"));
+      }
+   }
 }
 
 class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
@@ -310,6 +321,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
       // Setup the from/to text boxes
       //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      //this.scrollableBox = new St.BoxLayout();
       this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:2px;'});
       let text = this.fromTextBox.get_clutter_text();
       text.set_line_wrap(true);
@@ -319,7 +331,8 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       text.connect('activate', (actor, event) => {
          Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
          });
-      //fromScrollView.set_child(this.fromTextBox);
+      //this.scrollableBox.add_child(this.fromTextBox);
+      //fromScrollView.set_child(this.scrollableBox);
       this.textBox.add_child(this.fromTextBox);
       //this.textBox.add_child(fromScrollView);
 
@@ -441,13 +454,13 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          // Set the text box to "" since the associated language has been changed.
          if (actor == this.fromSearchEntry.get_clutter_text()) {
             this.fromLanguage = language;
-            this.fromTextBox.set_text("");
+            this.fromTextBox.set_text(""); // Clear the text box since the language has changed!
             if (language) {
                this._applet.settings.setValue("default-from-language", useEnglish ? language.englishName : language.name);
             }
          } else {
             this.toLanguage = language;
-            this.toTextBox.set_text("");
+            this.toTextBox.set_text(""); // Clear the text box since the language has changed!
             if (language) {
                this._applet.settings.setValue("default-to-language", useEnglish ? language.englishName : language.name);
             }
@@ -462,6 +475,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          }
          actor.set_cursor_position(cursorPos);
       }
+      this._applet.updateTooltip(this.fromSearchEntry.get_text(), this.toSearchEntry.get_text());
    }
 
    readTranslation(stdout, stderr, exitCode) {
@@ -494,7 +508,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
    // Callback that gets the clipboard text then performs some action with that text.
    clipboardText(cb, text, translate, play=false, copy=false) {
-      this.fromTextBox.set_text(text);
+      this.fromTextBox.set_text(text.trim());
       if (translate) {
          if (play) {
             Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.playTranslation) );

@@ -75,6 +75,11 @@ function _(text) {
   return locText;
 }
 
+function escapeQuotes(txt) {
+   txt = txt.replace(/\"/g, "\\\"");
+   return txt;
+}
+
 class PanelTranslatorApp extends Applet.IconApplet {
 
    constructor(orientation, panelHeight, instanceId) {
@@ -329,7 +334,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       text.set_max_length(200);
       text.connect('text-changed', () => {this.enableTranslateIfPossible();});
       text.connect('activate', (actor, event) => {
-         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          });
       //this.scrollableBox.add_child(this.fromTextBox);
       //fromScrollView.set_child(this.scrollableBox);
@@ -356,7 +361,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          Util.spawnCommandLineAsync("/usr/bin/xdg-open https://cinnamon-spices.linuxmint.com/applets/view/385");
          });
       this.playFrom = new ControlButton("audio-speakers-symbolic", _("Play"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + this.fromTextBox.get_text() + "\"");
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"");
          });
       this.playFrom.setEnabled(false);
       this.paste = new ControlButton("edit-paste-symbolic", _("Paste"), () => {
@@ -368,7 +373,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          this.toTextBox.set_text("");
          });
       this.translate = new ControlButton("media-playback-start-symbolic", _("Translate"), () => {
-         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          });
       this.translate.setEnabled(false);
       let toBtnBox = new St.BoxLayout({x_align: Clutter.ActorAlign.END, x_expand: true});
@@ -379,7 +384,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.copy.setEnabled(false);
       this.copy.getActor().set_x_align(Clutter.ActorAlign.END);
       this.playTo = new ControlButton("audio-speakers-symbolic", _("Play Translation"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toTextBox.get_text() + "\"");
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.toTextBox.get_text()) + "\"");
          });
       this.playTo.setEnabled(false);
 
@@ -487,7 +492,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
    playTranslation(stdout, stderr, exitCode) {
       if (this.readTranslation(stdout, stderr, exitCode)==0) {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + this.toTextBox.get_text() + "\"");
+         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.toTextBox.get_text()) + "\"");
       }
    }
 
@@ -511,11 +516,11 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.fromTextBox.set_text(text.trim());
       if (translate) {
          if (play) {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.playTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.playTranslation) );
          } else if (copy) {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.copyTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.copyTranslation) );
          } else {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + this.fromTextBox.get_text() + "\"", Lang.bind(this, this.readTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          }
       } else {
          this.toTextBox.set_text("");

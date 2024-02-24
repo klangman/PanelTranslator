@@ -162,6 +162,16 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.menu.toggle();
    }
 
+   setInfoMessage(message) {
+      if (message) {
+         this.infomenuitem.setIconSymbolicName("emblem-important");
+         this.infomenuitem.label.set_text(message);
+         this.infomenuitem.actor.show();
+      } else {
+         this.infomenuitem.actor.hide();
+      }
+   }
+
    getLanguages() {
       // trans -list-all
       Util.spawnCommandLineAsyncIO( "trans -list-all", Lang.bind(this, this.readLanguages) );
@@ -361,7 +371,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          Util.spawnCommandLineAsync("/usr/bin/xdg-open https://cinnamon-spices.linuxmint.com/applets/view/385");
          });
       this.playFrom = new ControlButton("audio-speakers-symbolic", _("Play"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"");
+         Util.spawnCommandLineAsyncIO("trans -no-translate -speak -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.fromLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readSpeak));
          });
       this.playFrom.setEnabled(false);
       this.paste = new ControlButton("edit-paste-symbolic", _("Paste"), () => {
@@ -384,7 +394,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.copy.setEnabled(false);
       this.copy.getActor().set_x_align(Clutter.ActorAlign.END);
       this.playTo = new ControlButton("audio-speakers-symbolic", _("Play Translation"), () => {
-         Util.spawnCommandLineAsync("trans -b -p -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.toTextBox.get_text()) + "\"");
+         Util.spawnCommandLineAsyncIO("trans -no-translate -speak -e " + this._applet.engine + " " + this.toLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.toTextBox.get_text()) + "\"", Lang.bind(this, this.readSpeak));
          });
       this.playTo.setEnabled(false);
 
@@ -486,6 +496,13 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
    readTranslation(stdout, stderr, exitCode) {
       if (exitCode===0) {
          this.toTextBox.set_text( stdout.trim() );
+      }
+      return exitCode;
+   }
+
+   readSpeak(stdout, stderr, exitCode) {
+      if (exitCode===0 && stderr.length > 0) {
+         this._applet.setInfoMessage(stderr.trim());
       }
       return exitCode;
    }

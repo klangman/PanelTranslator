@@ -28,6 +28,11 @@ const Lang = imports.lang;
 const Tooltips = imports.ui.tooltips;
 const Clutter = imports.gi.Clutter;
 const Config = imports.misc.config;
+const Gtk = imports.gi.Gtk;
+const GdkPixbuf = imports.gi.GdkPixbuf;
+const Cogl = imports.gi.Cogl;
+
+const ICONTHEME = Gtk.IconTheme.get_default();
 
 const UUID = "PanelTranslator@klangman";
 const ICON_SIZE = 16;
@@ -347,7 +352,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          });
       //this.scrollableBox.add_child(this.fromTextBox);
-      //fromScrollView.set_child(this.scrollableBox);
+      //fromScrollView.set_actor(this.scrollableBox);
       this.textBox.add_child(this.fromTextBox);
       //this.textBox.add_child(fromScrollView);
 
@@ -570,6 +575,22 @@ class ControlButton {
         this.button.connect('clicked', callback);
 
         this.icon = new St.Icon({ icon_type: St.IconType.SYMBOLIC, icon_name: icon, icon_size: ICON_SIZE });
+
+        let themeIcon = ICONTHEME.lookup_icon(icon, ICON_SIZE, 0);
+        if (themeIcon) {
+           let pixBuf = GdkPixbuf.Pixbuf.new_from_file_at_size(themeIcon.get_filename(), ICON_SIZE, ICON_SIZE);
+           if (pixBuf) {
+              let image = new Clutter.Image();
+              pixBuf.saturate_and_pixelate(pixBuf, 1, true);
+              try {
+                 image.set_data(pixBuf.get_pixels(), pixBuf.get_has_alpha() ? Cogl.PixelFormat.RGBA_8888 : Cogl.PixelFormat.RGBA_888,
+                    ICON_SIZE, ICON_SIZE, pixBuf.get_rowstride() );
+                 this.disabledIcon = new Clutter.Actor({width: ICON_SIZE, height: ICON_SIZE, content: image});
+              } catch(e) {
+                 // Can't set the image data, so just use the default!
+              }
+           }
+        }
         this.button.set_child(this.icon);
         this.actor.add_actor(this.button);
 
@@ -593,6 +614,11 @@ class ControlButton {
         this.button.change_style_pseudo_class("insensitive", !status);
         this.button.can_focus = status;
         this.button.reactive = status;
+        if (status || this.disabledIcon==undefined) {
+           this.button.set_child(this.icon);
+        } else {
+           this.button.set_child(this.disabledIcon);
+        }
     }
 }
 

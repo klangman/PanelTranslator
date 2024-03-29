@@ -94,7 +94,7 @@
             "Translate Clipboard and copy the translation": 8
         },
         "description": "Hotkey #1",
-        "tooltip": "Select the action to take when holding the hotkey #1 is pressed"
+        "tooltip": "Select the action to take when the #1 hotkey is pressed"
     },
     "hotkey-1": {
         "type": "keybinding",
@@ -115,7 +115,7 @@
             "Translate Clipboard and copy the translation": 8
         },
         "description": "Hotkey #2",
-        "tooltip": "Select the action to take when holding the hotkey #2 is pressed"
+        "tooltip": "Select the action to take when the #2 hotkey is pressed"
     },
     "hotkey-2": {
         "type": "keybinding",

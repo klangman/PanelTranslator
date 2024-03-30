@@ -118,23 +118,28 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this._updateHotkeys()
    }
 
-   _updateHotkeys() {
+   on_applet_removed_from_panel() {
+      this._updateHotkeys(false);
+   }
+
+   _updateHotkeys(register=true) {
       if (this.hotkey1Combo) {
          Main.keybindingManager.removeHotKey("panelTranslator-hotkey1");
          this.hotkey1Combo = null;
       }
-      this.hotkey1Combo = this.getHotkeySequence("hotkey-1");
-      if (this.hotkey1Combo) {
-         Main.keybindingManager.addHotKey("panelTranslator-hotkey1", this.hotkey1Combo, Lang.bind(this, function() {this.performHotkey("hotkey1-action")} ));
-      }
-
       if (this.hotkey2Combo) {
          Main.keybindingManager.removeHotKey("panelTranslator-hotkey2");
          this.hotkey2Combo = null;
       }
-      this.hotkey2Combo = this.getHotkeySequence("hotkey-2");
-      if (this.hotkey2Combo) {
-         Main.keybindingManager.addHotKey("panelTranslator-hotkey2", this.hotkey2Combo, Lang.bind(this, function() {this.performHotkey("hotkey2-action")} ));
+      if (register) {
+         this.hotkey1Combo = this.getHotkeySequence("hotkey-1");
+         if (this.hotkey1Combo) {
+            Main.keybindingManager.addHotKey("panelTranslator-hotkey1", this.hotkey1Combo, () => this.performHotkey("hotkey1-action") );
+         }
+         this.hotkey2Combo = this.getHotkeySequence("hotkey-2");
+         if (this.hotkey2Combo) {
+            Main.keybindingManager.addHotKey("panelTranslator-hotkey2", this.hotkey2Combo, () => this.performHotkey("hotkey2-action") );
+         }
       }
    }
 

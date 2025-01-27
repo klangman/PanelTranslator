@@ -42,12 +42,6 @@ const majorVersion = parseInt(Config.PACKAGE_VERSION.substring(0,1));
 
 const { hardcodedLanguages } = require('./languages_0_9_6_12.js');
 
-const AutoPasteType = {
-   Disabled: 0,
-   Selection: 1,
-   Clipboard: 2
-}
-
 const TranslateAction = {
    DoNothing: 0,
    PopupSelection: 1,
@@ -58,6 +52,23 @@ const TranslateAction = {
    PlayClipboard: 6,
    TransSelectionCopy: 7,
    TransClipboardCopy: 8
+}
+
+const Hotkeys = [
+   {name: "panelTranslator-trans-selection",      setting: "hotkey-trans-selection",      action: TranslateAction.PopupSelection,     enabled: false},
+   {name: "panelTranslator-trans-clipboard",      setting: "hotkey-trans-clipboard",      action: TranslateAction.PopupClipboard,     enabled: false},
+   {name: "panelTranslator-trans-play-selection", setting: "hotkey-trans-play-selection", action: TranslateAction.PopupSelectionPlay, enabled: false},
+   {name: "panelTranslator-trans-play-clipboard", setting: "hotkey-trans-play-clipboard", action: TranslateAction.PopupClipboardPlay, enabled: false},
+   {name: "panelTranslator-play-selection",       setting: "hotkey-play-selection",       action: TranslateAction.PlaySelection,      enabled: false},
+   {name: "panelTranslator-play-clipboard",       setting: "hotkey-play-clipboard",       action: TranslateAction.PlayClipboard,      enabled: false},
+   {name: "panelTranslator-trans-copy-selection", setting: "hotkey-trans-copy-selection", action: TranslateAction.TransSelectionCopy, enabled: false},
+   {name: "panelTranslator-trans-copy-clipboard", setting: "hotkey-trans-copy-clipboard", action: TranslateAction.TransClipboardCopy, enabled: false},
+]
+
+const AutoPasteType = {
+   Disabled: 0,
+   Selection: 1,
+   Clipboard: 2
 }
 
 const Engine = {
@@ -113,8 +124,9 @@ class PanelTranslatorApp extends Applet.IconApplet {
    }
 
    on_applet_added_to_panel() {
-      this._signalManager.connect(this.settings, "changed::hotkey-1", this._updateHotkeys, this);
-      this._signalManager.connect(this.settings, "changed::hotkey-2", this._updateHotkeys, this);
+      for ( let i=0 ; i < Hotkeys.length ; i++ ) {
+         this._signalManager.connect(this.settings, "changed::" + Hotkeys[i].setting, this._updateHotkeys, this);
+      }
       this._updateHotkeys()
    }
 
@@ -123,22 +135,20 @@ class PanelTranslatorApp extends Applet.IconApplet {
    }
 
    _updateHotkeys(register=true) {
-      if (this.hotkey1Combo) {
-         Main.keybindingManager.removeHotKey("panelTranslator-hotkey1");
-         this.hotkey1Combo = null;
-      }
-      if (this.hotkey2Combo) {
-         Main.keybindingManager.removeHotKey("panelTranslator-hotkey2");
-         this.hotkey2Combo = null;
-      }
-      if (register) {
-         this.hotkey1Combo = this.getHotkeySequence("hotkey-1");
-         if (this.hotkey1Combo) {
-            Main.keybindingManager.addHotKey("panelTranslator-hotkey1", this.hotkey1Combo, () => this.performHotkey("hotkey1-action") );
+      let i;
+      for ( i=0 ; i < Hotkeys.length ; i++ ) {
+         if (Hotkeys[i].enabled) {
+            Main.keybindingManager.removeHotKey(Hotkeys[i].name);
+            Hotkeys.enabled = false;
          }
-         this.hotkey2Combo = this.getHotkeySequence("hotkey-2");
-         if (this.hotkey2Combo) {
-            Main.keybindingManager.addHotKey("panelTranslator-hotkey2", this.hotkey2Combo, () => this.performHotkey("hotkey2-action") );
+
+         if (register) {
+            let hotkeyCombo = this.getHotkeySequence(Hotkeys[i].setting);
+            if (hotkeyCombo) {
+               let action = Hotkeys[i].action;
+               Main.keybindingManager.addHotKey(Hotkeys[i].name, hotkeyCombo, () => this._performTranslateAction(action));
+               Hotkeys[i].enabled = true;
+            }
          }
       }
    }
@@ -149,11 +159,6 @@ class PanelTranslatorApp extends Applet.IconApplet {
          return str;
       }
       return null;
-   }
-
-   performHotkey(name) {
-      let action = this.settings.getValue(name);
-      this._performTranslateAction(action);
    }
 
    _performTranslateAction(action) {
@@ -399,7 +404,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       text.set_max_length(200);
       text.connect('text-changed', () => {this.enableTranslateIfPossible();});
       text.connect('activate', (actor, event) => {
-         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
+         Util.spawnCommandLineAsyncIO( "trans -no-bidi -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          });
       //this.scrollableBox.add_child(this.fromTextBox);
       //fromScrollView.set_actor(this.scrollableBox);
@@ -438,7 +443,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
          this.toTextBox.set_text("");
          });
       this.translate = new ControlButton("media-playback-start-symbolic", _("Translate"), () => {
-         Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
+         Util.spawnCommandLineAsyncIO( "trans -no-bidi -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          });
       this.translate.setEnabled(false);
       let toBtnBox = new St.BoxLayout({x_align: Clutter.ActorAlign.END, x_expand: true});
@@ -588,11 +593,11 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.fromTextBox.set_text(text.trim());
       if (translate) {
          if (play) {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.playTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -no-bidi -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.playTranslation) );
          } else if (copy) {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.copyTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -no-bidi -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.copyTranslation) );
          } else {
-            Util.spawnCommandLineAsyncIO( "trans -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
+            Util.spawnCommandLineAsyncIO( "trans -no-bidi -b -e " + this._applet.engine + " " + this.fromLanguage.code + ":" + this.toLanguage.code + " \"" + escapeQuotes(this.fromTextBox.get_text()) + "\"", Lang.bind(this, this.readTranslation) );
          }
       } else {
          this.toTextBox.set_text("");

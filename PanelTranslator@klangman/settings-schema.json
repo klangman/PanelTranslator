@@ -150,5 +150,14 @@
     "default-to-language": {
         "type" : "generic",
         "default": "French"
+    },
+
+    "popup-width" : {
+       "type" : "generic",
+       "default" : 590
+    },
+    "popup-height" : {
+       "type" : "generic",
+       "default" : 270
     }
 }

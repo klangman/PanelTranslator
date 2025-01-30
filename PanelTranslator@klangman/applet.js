@@ -119,8 +119,15 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.getEngine();
       this.languages = [];
       this.getLanguages();
-      this.hotkey1Combo = null;
-      this.hotkey2Combo = null;
+      this._resizer = new Applet.PopupResizeHandler(this.menu.actor,
+            () => this._orientation,
+            (w,h) => this.translatorPopup.onBoxResized(w,h),
+            () => this.popup_width,
+            () => this.popup_height);
+
+      this.settings.bind("popup-width", "popup_width");
+      this.settings.bind("popup-height", "popup_height");
+
    }
 
    on_applet_added_to_panel() {
@@ -380,10 +387,15 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
             this.toTextBox.set_text(fromText);
       });
 
-      this.fromSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.START });
+      let monitor = this._applet.panel.monitor;
+      let width = Math.min(monitor.width, this._applet.settings.getValue("popup-width"));
+      let height = Math.min(monitor.height, this._applet.settings.getValue("popup-height"));
+      this._applet.settings.setValue("popup-width", width);
+      this._applet.settings.setValue("popup-height", height);
+      this.fromSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210*global.ui_scale, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.START });
       this.fromSearchEntry.get_clutter_text().connect( 'key-press-event', Lang.bind(this, this._onKeyPressEvent) );
       this.fromSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {this._onKeyReleaseEvent(actor, event, this.fromLanguage); } );
-      this.toSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.END });
+      this.toSearchEntry = new St.Entry({ name: 'menu-search-entry', width: 210*global.ui_scale, track_hover: true, can_focus: true, x_expand: true, x_align: Clutter.ActorAlign.END });
       this.toSearchEntry.get_clutter_text().connect( 'key-press-event', Lang.bind(this, this._onKeyPressEvent) );
       this.toSearchEntry.get_clutter_text().connect( 'key-release-event', (actor, event) => {this._onKeyReleaseEvent(actor, event, this.toLanguage); } );
       this._searchFromIcon = new St.Icon({ style_class: 'menu-search-entry-icon', icon_name: 'edit-find', icon_type: St.IconType.SYMBOLIC });
@@ -397,7 +409,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       // Setup the from/to text boxes
       //let fromScrollView = new St.ScrollView()     // TODO... Get this working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       //this.scrollableBox = new St.BoxLayout();
-      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: 250, height: 180, style: 'margin-right:2px;'});
+      this.fromTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Text to translate}"), width: /*250*/(width/2-45)*global.ui_scale, height: /*180*/(height-90)*global.ui_scale, style: 'margin-right:2px;'});
       let text = this.fromTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
@@ -411,7 +423,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       this.textBox.add_child(this.fromTextBox);
       //this.textBox.add_child(fromScrollView);
 
-      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: 250, height: 180, style: 'margin-left:2px;'});
+      this.toTextBox = new St.Entry({name: 'menu-search-entry', hint_text: _("{Translated text}"), width: /*250*/(width/2-45)*global.ui_scale, height: /*180*/(height-90)*global.ui_scale, style: 'margin-left:2px;'});
       text = this.toTextBox.get_clutter_text();
       text.set_line_wrap(true);
       text.set_single_line_mode(false);
@@ -470,6 +482,44 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 
       this.addActor(this.vertBox, {expand: true});
       this._applet._signalManager.connect(this._applet.settings, "changed::translate-engine", this._applet.getEngine, this._applet);
+      this._applet._signalManager.connect(global, "scale-changed", this._onScaleChanged, this);
+   }
+
+   onBoxResized(w,h) {
+      w = Math.max(Math.trunc(w), 540);
+      h = Math.max(Math.trunc(h), 160);
+      this.fromTextBox.set_width((w/2-45)*global.ui_scale);
+      this.fromTextBox.set_height((h-90)*global.ui_scale);
+
+      this.toTextBox.set_width((w/2-45)*global.ui_scale);
+      this.toTextBox.set_height((h-90)*global.ui_scale);
+      this._applet.settings.setValue("popup-width", w);
+      this._applet.settings.setValue("popup-height", h);
+   }
+
+   _onScaleChanged() {
+      let monitor = this._applet.panel.monitor;
+      let width = Math.min(monitor.width, this._applet.settings.getValue("popup-width"));
+      let height = Math.min(monitor.height, this._applet.settings.getValue("popup-height"));
+      this._applet.settings.setValue("popup-width", width);
+      this._applet.settings.setValue("popup-height", height);
+
+      this.fromSearchEntry.set_width(210*global.ui_scale);
+      this.toSearchEntry.set_width(210*global.ui_scale);
+      this.fromTextBox.set_width((width/2-45)*global.ui_scale);
+      this.fromTextBox.set_height((height-90)*global.ui_scale);
+      this.toTextBox.set_width((width/2-45)*global.ui_scale);
+      this.toTextBox.set_height((height-90)*global.ui_scale);
+
+      this.switchButton.updateDisabledIcon();
+      this.config.updateDisabledIcon();
+      this.help.updateDisabledIcon();
+      this.playFrom.updateDisabledIcon();
+      this.paste.updateDisabledIcon();
+      this.clear.updateDisabledIcon();
+      this.translate.updateDisabledIcon();
+      this.copy.updateDisabledIcon();
+      this.playTo.updateDisabledIcon();
    }
 
    // Handles key press events for the from/to language search entry widgets
@@ -625,31 +675,36 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
 class ControlButton {
     constructor(icon, tooltip, callback) {
         this.actor = new St.Bin();
-
         this.button = new St.Button({style_class: 'menu-favorites-button' /*'panel-translator-button' 'menu-favorites-button' 'keyboard-key'*/});
         this.button.connect('clicked', callback);
-
+        this.icon_name = icon;
         this.icon = new St.Icon({ icon_type: St.IconType.SYMBOLIC, icon_name: icon, icon_size: ICON_SIZE });
+        this.updateDisabledIcon();
+        this.button.set_child(this.icon);
+        this.actor.add_actor(this.button);
+        this.tooltip = new Tooltips.Tooltip(this.button, tooltip);
+    }
 
-        let themeIcon = ICONTHEME.lookup_icon(icon, ICON_SIZE, 0);
+    updateDisabledIcon() {
+        let themeIcon = ICONTHEME.lookup_icon(this.icon_name, ICON_SIZE*global.ui_scale, 0);
         if (themeIcon) {
-           let pixBuf = GdkPixbuf.Pixbuf.new_from_file_at_size(themeIcon.get_filename(), ICON_SIZE, ICON_SIZE);
+           let pixBuf = GdkPixbuf.Pixbuf.new_from_file_at_size(themeIcon.get_filename(), ICON_SIZE*global.ui_scale, ICON_SIZE*global.ui_scale);
            if (pixBuf) {
               let image = new Clutter.Image();
               pixBuf.saturate_and_pixelate(pixBuf, 1, true);
               try {
                  image.set_data(pixBuf.get_pixels(), pixBuf.get_has_alpha() ? Cogl.PixelFormat.RGBA_8888 : Cogl.PixelFormat.RGBA_888,
-                    ICON_SIZE, ICON_SIZE, pixBuf.get_rowstride() );
-                 this.disabledIcon = new Clutter.Actor({width: ICON_SIZE, height: ICON_SIZE, content: image});
+                    ICON_SIZE*global.ui_scale, ICON_SIZE*global.ui_scale, pixBuf.get_rowstride() );
+                 this.disabledIcon = new Clutter.Actor({width: ICON_SIZE*global.ui_scale, height: ICON_SIZE*global.ui_scale, content: image});
+                 if (this.enabledStatus === false) {
+                    // Since the disabledIcon has changed, we might need to reflect that change in the actual button
+                    this.setEnabled(false);
+                 }
               } catch(e) {
                  // Can't set the image data, so just use the default!
               }
            }
         }
-        this.button.set_child(this.icon);
-        this.actor.add_actor(this.button);
-
-        this.tooltip = new Tooltips.Tooltip(this.button, tooltip);
     }
 
     getActor() {
@@ -666,6 +721,7 @@ class ControlButton {
     }
 
     setEnabled(status) {
+        this.enabledStatus = status;
         this.button.change_style_pseudo_class("insensitive", !status);
         this.button.can_focus = status;
         this.button.reactive = status;

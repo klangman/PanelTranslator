@@ -42,6 +42,12 @@ const majorVersion = parseInt(Config.PACKAGE_VERSION.substring(0,1));
 
 const { hardcodedLanguages } = require('./languages_0_9_6_12.js');
 
+const AutoPasteType = {
+   Disabled: 0,
+   Selection: 1,
+   Clipboard: 2
+}
+
 const TranslateAction = {
    DoNothing: 0,
    PopupSelection: 1,
@@ -64,12 +70,6 @@ const Hotkeys = [
    {name: "panelTranslator-trans-copy-selection", setting: "hotkey-trans-copy-selection", action: TranslateAction.TransSelectionCopy, enabled: false},
    {name: "panelTranslator-trans-copy-clipboard", setting: "hotkey-trans-copy-clipboard", action: TranslateAction.TransClipboardCopy, enabled: false},
 ]
-
-const AutoPasteType = {
-   Disabled: 0,
-   Selection: 1,
-   Clipboard: 2
-}
 
 const Engine = {
    Apertium: 0,
@@ -119,12 +119,13 @@ class PanelTranslatorApp extends Applet.IconApplet {
       this.getEngine();
       this.languages = [];
       this.getLanguages();
-      this._resizer = new Applet.PopupResizeHandler(this.menu.actor,
+      if (typeof Applet.PopupResizeHandler === "function") {
+         this._resizer = new Applet.PopupResizeHandler(this.menu.actor,
             () => this._orientation,
             (w,h) => this.translatorPopup.onBoxResized(w,h),
             () => this.popup_width,
             () => this.popup_height);
-
+      }
       this.settings.bind("popup-width", "popup_width");
       this.settings.bind("popup-height", "popup_height");
 

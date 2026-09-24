@@ -34,6 +34,9 @@ const GdkPixbuf = imports.gi.GdkPixbuf;
 const Cogl = imports.gi.Cogl;
 const Main = imports.ui.main;
 
+// St.PolicyType only exists in newer Cinnamon versions, older versions use Gtk.PolicyType
+const PolicyType = St.PolicyType ? St.PolicyType : Gtk.PolicyType;
+
 const ICONTHEME = Gtk.IconTheme.get_default();
 
 const UUID = "PanelTranslator@klangman";
@@ -507,7 +510,7 @@ class TranslatorPopupItem extends PopupMenu.PopupMenuSection {
       // the whole ScrollView and the scrollbar ends up inside the box. The Entry itself is made frameless.
       let scrollView = new St.ScrollView({ name: 'menu-search-entry', width: width, height: height, style: style,
                                            x_fill: true, y_fill: true, reactive: true, track_hover: true,
-                                           hscrollbar_policy: St.PolicyType.NEVER, vscrollbar_policy: St.PolicyType.AUTOMATIC });
+                                           hscrollbar_policy: PolicyType.NEVER, vscrollbar_policy: PolicyType.AUTOMATIC });
       let text = entry.get_clutter_text();
       // A read-only box can still get key focus (so text can be selected/copied), but it should not show a text
       // cursor. St.Entry forces the cursor visible on focus, so instead make it zero width.
